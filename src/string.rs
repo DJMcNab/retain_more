@@ -7,7 +7,7 @@ use alloc::string::String;
 ///
 /// This trait is sealed and cannot be implemented for types outside of
 /// `retain_more`
-pub trait RetainMoreString: sealed::AllocMoreSealedString {
+pub trait RetainMoreString: sealed::Sealed {
     /// Retains only the characters specified by the predicate.
     ///
     /// In other words, remove all characters for which `f` returns false. This
@@ -230,8 +230,8 @@ impl RetainMoreString for String {
 mod sealed {
     use alloc::string::String;
 
-    pub trait AllocMoreSealedString {}
-    impl AllocMoreSealedString for String {}
+    pub trait Sealed {}
+    impl Sealed for String {}
 }
 
 #[cfg(test)]
