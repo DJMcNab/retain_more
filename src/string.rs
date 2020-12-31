@@ -78,9 +78,10 @@ pub trait RetainMoreString: sealed::AllocMoreSealedString {
     /// # Examples
     ///
     /// ```
+    /// use retain_more::RetainMoreString as _;
     /// let mut s = String::from("f_o_ob_ar");
     ///
-    /// s.retain(|c| c != '_');
+    /// s.retain_default(|c| c != '_');
     ///
     /// assert_eq!(s, "foobar");
     /// ```
@@ -89,10 +90,11 @@ pub trait RetainMoreString: sealed::AllocMoreSealedString {
     /// index.
     ///
     /// ```
+    /// use retain_more::RetainMoreString as _;
     /// let mut s = String::from("abcde");
     /// let keep = [false, true, true, false, true];
     /// let mut i = 0;
-    /// s.retain(|_| (keep[i], i += 1).0);
+    /// s.retain_default(|_| (keep[i], i += 1).0);
     /// assert_eq!(s, "bce");
     /// ```
     fn retain_default<F: FnMut(char) -> bool>(&mut self, mut f: F) {
