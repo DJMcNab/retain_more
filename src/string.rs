@@ -226,4 +226,25 @@ mod tests {
         after_helper("--12345", "-", redact);
         after_helper("-12-3-45--", "--", redact);
     }
+
+    #[test]
+    fn retain_default() {
+        // Adapted from https://github.com/rust-lang/rust/blob/2ad5292aea63/library/alloc/tests/string.rs#L364-L396
+        let mut s = String::from("α_β_γ");
+
+        s.retain_default(|_| true);
+        assert_eq!(s, "α_β_γ");
+
+        s.retain_default(|c| c != '_');
+        assert_eq!(s, "αβγ");
+
+        s.retain_default(|c| c != 'β');
+        assert_eq!(s, "αγ");
+
+        s.retain_default(|c| c == 'α');
+        assert_eq!(s, "α");
+
+        s.retain_default(|_| false);
+        assert_eq!(s, "");
+    }
 }
