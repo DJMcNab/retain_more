@@ -2,25 +2,33 @@ use core::{slice, str::from_utf8_unchecked_mut};
 
 use alloc::string::String;
 
-/// Extension methods on [`String`].
+/// More advanced versions of [`String::retain`], implemented as extension
+/// methods on [`String`].
 ///
 /// This trait is sealed and cannot be implemented for types outside of
-/// `retain_more`.
+/// `retain_more`
 pub trait RetainMoreString: sealed::AllocMoreSealedString {
-    /// A version of [`String::retain`] which allows the predicate mutable
+    /// Retains only the characters specified by the predicate.
+    ///
+    /// In other words, remove all characters for which `f` returns false. This
+    /// method operates in place, visiting each character exactly once
+    /// once in the original order, and preserves the order of the retained
+    /// characters.
+    ///
+    /// This version of [`String::retain`] allows the predicate mutable
     /// access to the valid parts of the full string.
     ///
     /// The arguments of the predicate are:
-    ///  - 0: `&mut str`; The already retained parts of `self`, for which
-    ///    predicate returned `true`
-    ///  - 1: [`char`]; The current character being considered
+    ///  - 0: `&mut str`; Contents of `self` which have already been retained,
+    ///    i.e. those for which predicate has already returned `true`.
+    ///  - 1: [`char`]; The current character being considered.
     ///  - 2: `&mut str`; The parts of `self` yet to be considered.
     ///
     /// # Usage
     ///
     /// ```
     /// # use retain_more::RetainMoreString as _;
-    /// let mut my_string = "Super secret code: -100054321;-78912. EOF\
+    /// let mut my_string = "Super secret code: -100054321-78912EOF\
     ///     Here is some content which shouldn't be seen"
     ///     .to_string();
     /// /// Remove all numbers from the string, including a single leading `'-'` and
@@ -36,12 +44,13 @@ pub trait RetainMoreString: sealed::AllocMoreSealedString {
     ///     }
     /// }
     /// my_string.retain_all(cleanup);
-    /// assert_eq!(&my_string, "Super secret code: ;. EOF");
+    /// assert_eq!(&my_string, "Super secret code: EOF");
     /// ```
     fn retain_all<F: FnMut(&mut str, char, &mut str) -> bool>(&mut self, f: F);
 
     /// A helper for the common case where only access to the parts of the
-    /// [`String`] which haven't been considered are required
+    /// [`String`] which haven't been considered yet is required, i.e. the
+    /// predicate only uses arguments 1 and 2 from [`Self::retain_all`].
     fn retain_after<F: FnMut(char, &mut str) -> bool>(&mut self, mut f: F) {
         self.retain_all(move |_, current, after| f(current, after))
     }
@@ -53,8 +62,21 @@ pub trait RetainMoreString: sealed::AllocMoreSealedString {
     /// [`retain_all`](`RetainMoreString::retain_all`) is a strictly more
     /// powerful abstraction than [`String::retain`] from [`alloc`].
     ///
+    /// The predicate therefore only uses argument 1 from [`Self::retain_all`].
+    ///
+    /// ## Standard retain docs
+    ///
+    /// This documentation is taken from [`String::retain`] from [`alloc`].
+    ///
+    /// Retains only the characters specified by the predicate.
+    ///
+    /// In other words, remove all characters `c` such that `f(c)` returns
+    /// false. This method operates in place, visiting each character exactly
+    /// once in the original order, and preserves the order of the retained
+    /// characters.
+    ///
     /// # Examples
-    /// (Taken from alloc docs)
+    ///
     /// ```
     /// let mut s = String::from("f_o_ob_ar");
     ///
@@ -131,9 +153,10 @@ impl RetainMoreString for String {
                     // SAFETY: UTF-8 is maintained in the before section by only copying
                     // a full character at a time.
                     from_utf8_unchecked_mut(slice::from_raw_parts_mut(ptr, idx - del_bytes)),
-                    // SAFETY: idx + ch_len <= len because self, hence `idx + ch_len` is within the allocation of self.
-                    // was valid UTF-8 by invariant, hence after is valid.
-                    // This does not alias with `before`, because `-del_bytes < ch_len`
+                    // SAFETY: idx + ch_len <= len because self, hence `idx + ch_len` is within the
+                    // allocation of self. was valid UTF-8 by invariant, hence
+                    // after is valid. This does not alias with `before`,
+                    // because `-del_bytes < ch_len`
                     from_utf8_unchecked_mut(slice::from_raw_parts_mut(
                         ptr.add(idx + ch_len),
                         len - idx - ch_len,
@@ -156,7 +179,7 @@ impl RetainMoreString for String {
             // 'Point' idx to the next char
             idx += ch_len;
         }
-        // len-del_bytes <= len <= capacity
+        // len - del_bytes <= len <= capacity
         unsafe {
             self.as_mut_vec().set_len(len - del_bytes);
         }
