@@ -100,6 +100,7 @@ pub trait RetainMoreString: sealed::AllocMoreSealedString {
     }
 }
 
+// Future work - support this for strings with all allocators once/if <https://github.com/rust-lang/rust/pull/79500> lands
 impl RetainMoreString for String {
     fn retain_all<F: FnMut(&mut str, char, &mut str) -> bool>(&mut self, mut f: F) {
         let len = self.len();
