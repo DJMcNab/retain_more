@@ -6,7 +6,7 @@ A version of `String::retain` which provides access to the rest of the string
 use retain_more::RetainMore as _;
 
 fn redact(input: &mut String) {
-    input.retain_following(|current: char, rest: &str| {
+    input.retain_after(|current: char, rest: &str| {
         match (current, rest.chars().next()) {
             ('-', Some(c)) => !c.is_ascii_digit(),
             (c, _) => !c.is_ascii_digit(),
