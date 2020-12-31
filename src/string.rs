@@ -46,6 +46,40 @@ pub trait RetainMoreString: sealed::AllocMoreSealedString {
     /// my_string.retain_all(cleanup);
     /// assert_eq!(&my_string, "Super secret code: EOF");
     /// ```
+    ///
+    /// In many cases, access to `before` should be used cautiously, and storing
+    /// state in `f` should be preferred. This is because if `f` returns `false`
+    /// because of the state of `before`, then it will always return false,
+    /// since `before` will not change before the next calling of `f` in that
+    /// case. For example, a naïve attempt at ignoring the first character
+    /// of every word would instead remove every character.
+    ///
+    /// ```
+    /// use retain_more::RetainMoreString as _;
+    /// let mut my_string = "Remove the first letter of each word".to_string();
+    /// my_string.retain_all(|before, _, _| !matches!(before.chars().rev().next(), Some(' ') | None));
+    /// assert_eq!(&my_string, "");
+    /// ```
+    /// A more correct implementation of this would look like
+    /// ```
+    /// # use retain_more::RetainMoreString as _;
+    /// # let mut my_string = "Remove the first letter of each word".to_string();
+    /// let mut word_start = true;
+    /// my_string.retain_all(|_, it, _| {
+    ///     if word_start {
+    ///         word_start = false;
+    ///         false
+    ///     } else if it == ' ' {
+    ///         word_start = true;
+    ///         true
+    ///     } else {
+    ///         true
+    ///     }
+    /// });
+    /// assert_eq!(&my_string, "emove he irst etter f ach ord");
+    /// ```
+    /// Notice however that this implementation could also simply use
+    /// [`Self::retain_default`] or indeed [`String::retain`]
     fn retain_all<F: FnMut(&mut str, char, &mut str) -> bool>(&mut self, f: F);
 
     /// A helper for the common case where only access to the parts of the
